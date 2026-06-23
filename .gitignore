@@ -1,0 +1,25 @@
+# Secrets / local config — never commit
+.env
+.env.*
+!.env.example
+targets.json
+*.local.*
+CLAUDE.local.md
+
+# Rust
+/agent/target
+agent/target
+
+# Node / TypeScript
+node_modules
+dist
+build
+*.tsbuildinfo
+npm-debug.log*
+
+# Logs / runtime
+*.log
+*.pid
+
+# OS / editor
+.DS_Store
