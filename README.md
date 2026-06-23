@@ -31,9 +31,15 @@ SSH-native and has no built-in fleet dashboard, so this fills that gap.
 
 ## Status
 
-🌱 **Scaffold only.** This commit sets up the repo structure, the spec, and the
-working conventions. The agent and dashboard are stubs — see [SPEC.md](SPEC.md) for
-the full design and [the roadmap](SPEC.md#roadmap) for what to build next.
+MVP work is underway:
+
+- `agent/` serves `GET /healthz` and schema-v1 `GET /metrics` with CPU, memory, disk,
+  and `http.source = "none"`.
+- `dashboard/` serves a password-gated UI, scrapes the local agent, tracks its own
+  inbound HTTP request metrics, and keeps recent samples in memory.
+
+Multi-VM targets, SSH scraping, access-log HTTP metrics, and deploy automation are
+still on the [roadmap](SPEC.md#roadmap).
 
 ## Layout
 
@@ -46,7 +52,17 @@ the full design and [the roadmap](SPEC.md#roadmap) for what to build next.
 
 ## Quick start
 
-See [SPEC.md](SPEC.md). Nothing runs yet beyond the stubs.
+```sh
+cd agent
+cargo run
+
+cd ../dashboard
+npm install
+npm run dev
+```
+
+The dashboard defaults to `http://127.0.0.1:8080` and the local dev password is
+`password`.
 
 ## License
 
