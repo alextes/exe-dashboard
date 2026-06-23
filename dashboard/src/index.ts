@@ -77,6 +77,11 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
 
+  if ((method === "GET" || method === "HEAD") && url.pathname === "/favicon.svg") {
+    sendSvg(res, 200, faviconSvg());
+    return;
+  }
+
   if (method === "GET" && url.pathname === "/login") {
     sendHtml(res, 200, renderLoginPage(url.searchParams.has("error")));
     return;
@@ -204,6 +209,7 @@ function renderDashboard(): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>exe-dashboard</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <style>${dashboardCss()}</style>
 </head>
 <body>
@@ -370,6 +376,7 @@ function renderLoginPage(hasError: boolean): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Login · exe-dashboard</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <style>${dashboardCss()}</style>
 </head>
 <body class="login-body">
@@ -385,6 +392,14 @@ function renderLoginPage(hasError: boolean): string {
   </main>
 </body>
 </html>`);
+}
+
+function faviconSvg(): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#172026"/>
+  <path d="M16 38c5 0 5-12 10-12s5 12 10 12 5-12 12-12" fill="none" stroke="#f5f7f8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="48" cy="26" r="4" fill="#2f6fed"/>
+</svg>`;
 }
 
 function dashboardCss(): string {
@@ -645,6 +660,13 @@ function sendHtml(res: ServerResponse, status: number, body: string): void {
 function sendText(res: ServerResponse, status: number, body: string): void {
   res.statusCode = status;
   res.setHeader("Content-Type", "text/plain; charset=utf-8");
+  res.end(body);
+}
+
+function sendSvg(res: ServerResponse, status: number, body: string): void {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=86400");
   res.end(body);
 }
 
