@@ -124,6 +124,11 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
     return;
   }
 
+  if (method === "GET" && url.pathname === "/targets") {
+    sendHtml(res, 200, renderTargets());
+    return;
+  }
+
   sendText(res, 404, "not found\n");
 }
 
@@ -193,8 +198,6 @@ function coerceMetrics(value: unknown): Metrics {
 }
 
 function renderDashboard(): string {
-  const renderedTargets = Array.from(targets.values()).map(renderTarget).join("");
-
   return html(`<!doctype html>
 <html lang="en">
 <head>
@@ -214,11 +217,15 @@ function renderDashboard(): string {
     </form>
   </header>
   <main class="shell">
-    <section class="targets">${renderedTargets}</section>
+    <section class="targets">${renderTargets()}</section>
   </main>
   <script>${dashboardScript()}</script>
 </body>
 </html>`);
+}
+
+function renderTargets(): string {
+  return Array.from(targets.values()).map(renderTarget).join("");
 }
 
 function renderTarget(target: TargetState): string {
@@ -291,7 +298,30 @@ function tickSampleAges() {
 
 tickSampleAges();
 setInterval(tickSampleAges, 1000);
-setTimeout(() => location.reload(), refreshMs);
+setInterval(async () => {
+  try {
+    const response = await fetch("/targets", {
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { "X-Requested-With": "fetch" },
+    });
+
+    if (response.redirected && response.url.includes("/login")) {
+      location.href = "/login";
+      return;
+    }
+
+    if (!response.ok) return;
+
+    const targets = document.querySelector(".targets");
+    if (!targets) return;
+
+    targets.innerHTML = await response.text();
+    tickSampleAges();
+  } catch {
+    // Keep the last rendered sample visible until the next refresh succeeds.
+  }
+}, refreshMs);
 `;
 }
 
