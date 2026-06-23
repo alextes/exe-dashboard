@@ -216,9 +216,7 @@ function renderDashboard(): string {
   <main class="shell">
     <section class="targets">${renderedTargets}</section>
   </main>
-  <script>
-    setTimeout(() => location.reload(), ${Math.max(scrapeIntervalMs, 5_000)});
-  </script>
+  <script>${dashboardScript()}</script>
 </body>
 </html>`);
 }
@@ -248,7 +246,7 @@ function renderTarget(target: TargetState): string {
     <div class="target-head">
       <div>
         <h2>${escapeHtml(latest.vm)}</h2>
-        <p>${escapeHtml(formatAge(latest.ts))} · ${latest.cpu.cores} cores · uptime ${escapeHtml(formatDuration(latest.uptime_s))}</p>
+        <p><span class="sample-age" data-sample-ts="${latest.ts}">${escapeHtml(formatAge(latest.ts))}</span> · ${latest.cpu.cores} cores · uptime ${escapeHtml(formatDuration(latest.uptime_s))}</p>
       </div>
       <span class="status ok">online</span>
     </div>
@@ -268,6 +266,33 @@ function renderTarget(target: TargetState): string {
     </div>
     ${target.lastError ? `<p class="stale">Last scrape error: ${escapeHtml(target.lastError)}</p>` : ""}
   </article>`;
+}
+
+function dashboardScript(): string {
+  return `
+const refreshMs = ${Math.max(scrapeIntervalMs, 5_000)};
+
+function formatAgeFromSeconds(ts) {
+  const ageSeconds = Math.max(0, Math.round(Date.now() / 1000 - ts));
+  if (ageSeconds < 2) return "just now";
+  if (ageSeconds < 60) return ageSeconds + "s ago";
+  if (ageSeconds < 3600) return Math.floor(ageSeconds / 60) + "m ago";
+  return Math.floor(ageSeconds / 3600) + "h ago";
+}
+
+function tickSampleAges() {
+  for (const node of document.querySelectorAll("[data-sample-ts]")) {
+    const ts = Number(node.getAttribute("data-sample-ts"));
+    if (Number.isFinite(ts)) {
+      node.textContent = formatAgeFromSeconds(ts);
+    }
+  }
+}
+
+tickSampleAges();
+setInterval(tickSampleAges, 1000);
+setTimeout(() => location.reload(), refreshMs);
+`;
 }
 
 function renderGauge(
